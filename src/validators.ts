@@ -83,6 +83,21 @@ export class ErrorFieldValidator {
   getErrorElement(): HTMLElement | null {
     return this.errorElement;
   }
+  setErrorMessage(message: string): boolean {
+    if (this.hasErrorField() && this.errorElement) {
+      this.errorElement.textContent = message;
+      this.errorElement.style.display = 'block';
+      return true;
+    }
+    return false;
+  }
 
-
+  clearErrorMessage(): boolean {
+    if (this.errorElement) {
+      this.errorElement.textContent = '';
+      this.errorElement.style.display = 'none';
+      return true;
+    }
+    return false;
+  }
 }
