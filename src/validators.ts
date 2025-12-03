@@ -59,3 +59,30 @@ export function validateLabelBinding(input: HTMLInputElement): boolean {
   
   return false;
 }
+
+
+
+
+export class ErrorFieldValidator {
+  private input: HTMLInputElement;
+  private errorElement: HTMLElement | null = null;
+
+  constructor(input: HTMLInputElement) {
+    this.input = input;
+  }
+
+  hasErrorField(): boolean {
+    const nextElement = this.input.nextElementSibling;
+    if (nextElement && (nextElement.classList.contains('error') || nextElement.classList.contains('error-message'))) {
+      this.errorElement = nextElement as HTMLElement;
+      return true;
+    }
+    return false;
+  }
+
+  getErrorElement(): HTMLElement | null {
+    return this.errorElement;
+  }
+
+
+}
