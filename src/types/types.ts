@@ -17,16 +17,19 @@ export type StringValidator = {
   min: (message: string) => StringValidator;
   max: (message: string) => StringValidator;
   pattern: (pattern: RegExp, message: string) => StringValidator;
+  label: (message: string) => StringValidator;
 };
 
 export type NumberValidator = {
   min: (message: string) => NumberValidator;
   max: (message: string) => NumberValidator;
+  label: (message: string) => NumberValidator;
 };
 
 export type ArrayValidator = {
   min: (message: string) => ArrayValidator;
   max: (message: string) => ArrayValidator;
+  label: (message: string) => ArrayValidator;
 };
 
 export type ValidityStateType = {

@@ -44,3 +44,18 @@ export function KatyshFormValidator(formElement: HTMLFormElement): FormValidator
     },
   };
 }
+
+export function validateLabelBinding(input: HTMLInputElement): boolean {
+  const inputId = input.id;
+
+  if (inputId) {
+    const label = document.querySelector(`label[for="${inputId}"]`);
+    if (label) return true;
+  }
+  
+
+  const parentLabel = input.closest('label');
+  if (parentLabel) return true;
+  
+  return false;
+}
