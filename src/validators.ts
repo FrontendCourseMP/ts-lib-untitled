@@ -63,6 +63,69 @@ export function validateLabelBinding(input: HTMLInputElement): boolean {
 
 
 
+export class FormInputValidator {
+  private form: HTMLFormElement;
+  private inputs: HTMLInputElement[] = [];
+
+  constructor(form: HTMLFormElement) {
+    this.form = form;
+    this.collectInputs();
+  }
+
+  private collectInputs(): void {
+    const inputElements = this.form.querySelectorAll('input, textarea, select');
+    this.inputs = Array.from(inputElements).filter(
+      (el): el is HTMLInputElement => el instanceof HTMLInputElement ||
+                                        el instanceof HTMLTextAreaElement ||
+                                        el instanceof HTMLSelectElement
+    ) as HTMLInputElement[];
+  }
+
+  hasInputs(): boolean {
+    return this.inputs.length > 0;
+  }
+
+  getInputCount(): number {
+    return this.inputs.length;
+  }
+
+  getInputs(): HTMLInputElement[] {
+    return this.inputs;
+  }
+
+  hasInputByName(name: string): boolean {
+    return this.inputs.some(input => input.name === name);
+  }
+
+  hasInputById(id: string): boolean {
+    return this.inputs.some(input => input.id === id);
+  }
+
+  getInputByName(name: string): HTMLInputElement | null {
+    return this.inputs.find(input => input.name === name) || null;
+  }
+
+  getInputById(id: string): HTMLInputElement | null {
+    return this.inputs.find(input => input.id === id) || null;
+  }
+
+  getInputsByType(type: string): HTMLInputElement[] {
+    return this.inputs.filter(input => input.type === type);
+  }
+
+  hasRequiredInputs(): boolean {
+    return this.inputs.some(input => input.required);
+  }
+
+  getRequiredInputs(): HTMLInputElement[] {
+    return this.inputs.filter(input => input.required);
+  }
+
+  validateAllInputsHaveNames(): boolean {
+    return this.inputs.every(input => input.name && input.name.trim() !== '');
+  }
+}
+
 export class ErrorFieldValidator {
   private input: HTMLInputElement;
   private errorElement: HTMLElement | null = null;
