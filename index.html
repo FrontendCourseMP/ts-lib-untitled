@@ -7,13 +7,23 @@
   </head>
   <body>
     <main>
-      <section>
-        <form novalidate>
-          <label>Имя <input type="text" required></label>
-          <p role="alert" aria-live="assertive"></p>
-          <button type="submit">Отправить</button>
-        </form>
-      </section>
+      <h1>Валидатор форм</h1>
+
+      <form id="testForm" novalidate>
+        <div>
+          <label for="username">Имя пользователя</label>
+          <input type="text" id="username" name="username" required>
+          <span class="error-message"></span>
+        </div>
+
+        <div>
+          <label for="age">Возраст</label>
+          <input type="number" id="age" name="age" required>
+          <span class="error-message"></span>
+        </div>
+
+        <button type="submit">Отправить</button>
+      </form>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
