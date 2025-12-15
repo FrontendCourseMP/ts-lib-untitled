@@ -6,253 +6,7 @@ import type {
   ArrayValidator,
 } from './types/types';
 
-export class FormInputValidator {
-  private form: HTMLFormElement;
-  private inputs: (HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement)[] = [];
-
-  constructor(form: HTMLFormElement) {
-    this.form = form;
-    this.collectInputs();
-  }
-
-  private collectInputs(): void {
-    const inputElements = this.form.querySelectorAll('input, textarea, select');
-    this.inputs = Array.from(inputElements).filter(
-      (el): el is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement =>
-        el instanceof HTMLInputElement ||
-        el instanceof HTMLTextAreaElement ||
-        el instanceof HTMLSelectElement
-    );
-  }
-
-  hasInputs(): boolean {
-    return this.inputs.length > 0;
-  }
-
-  getInputCount(): number {
-    return this.inputs.length;
-  }
-
-  getInputs() {
-    return this.inputs;
-  }
-
-  hasInputByName(name: string): boolean {
-    return this.inputs.some(input => input.name === name);
-  }
-
-  hasInputById(id: string): boolean {
-    return this.inputs.some(input => input.id === id);
-  }
-
-  getInputByName(name: string) {
-    return this.inputs.find(input => input.name === name) ?? null;
-  }
-
-  getInputById(id: string) {
-    return this.inputs.find(input => input.id === id) ?? null;
-  }
-
-  getInputsByType(type: string) {
-    return this.inputs.filter(
-      input => input instanceof HTMLInputElement && input.type === type
-    );
-  }
-
-  hasRequiredInputs(): boolean {
-    return this.inputs.some(input => input.required);
-  }
-
-  getRequiredInputs() {
-    return this.inputs.filter(input => input.required);
-  }
-
-  validateAllInputsHaveNames(): boolean {
-    return this.inputs.every(input => input.name && input.name.trim() !== '');
-  }
-}
-
-export function KatyshFormValidator(formElement: HTMLFormElement): FormValidator {
-  const formValidator = new FormInputValidator(formElement);
-  const validationRules: Map<string, Array<() => boolean>> = new Map();
-
-  if (!formValidator.hasInputs()) {
-    throw new Error('Form has no inputs');
-  }
-
-  if (!formValidator.validateAllInputsHaveNames()) {
-    throw new Error('Not all inputs have name attribute');
-  }
-
-  return {
-    field(fieldName: string): FieldValidator {
-      const element = formValidator.getInputByName(fieldName);
-      if (!element) {
-        throw new Error(`Field "${fieldName}" not found`);
-      }
-
-      if (element instanceof HTMLInputElement && !validateLabelBinding(element)) {
-        throw new Error(`Field "${fieldName}" has no label binding`);
-      }
-
-      const errorValidator = new ErrorFieldValidator(element as HTMLInputElement, formElement);
-      if (!errorValidator.hasErrorField()) {
-        throw new Error(`Field "${fieldName}" has no error field`);
-      }
-
-      if (!validationRules.has(fieldName)) {
-        validationRules.set(fieldName, []);
-      }
-
-      return {
-        string(): StringValidator {
-          const validator: StringValidator = {
-            min(message: string) {
-              validationRules.get(fieldName)!.push(() => {
-                const value = (element as HTMLInputElement).value;
-                const minLength = parseInt(message.match(/\d+/)?.[0] || '0');
-                if (value.length < minLength) {
-                  errorValidator.setErrorMessage(message);
-                  return false;
-                }
-                errorValidator.clearErrorMessage();
-                return true;
-              });
-              return validator;
-            },
-            max(message: string) {
-              validationRules.get(fieldName)!.push(() => {
-                const value = (element as HTMLInputElement).value;
-                const maxLength = parseInt(message.match(/\d+/)?.[0] || '999');
-                if (value.length > maxLength) {
-                  errorValidator.setErrorMessage(message);
-                  return false;
-                }
-                errorValidator.clearErrorMessage();
-                return true;
-              });
-              return validator;
-            },
-            pattern(pattern: RegExp, message: string) {
-              validationRules.get(fieldName)!.push(() => {
-                const value = (element as HTMLInputElement).value;
-                if (!pattern.test(value)) {
-                  errorValidator.setErrorMessage(message);
-                  return false;
-                }
-                errorValidator.clearErrorMessage();
-                return true;
-              });
-              return validator;
-            },
-            label(_message: string) {
-              return validator;
-            },
-          };
-          return validator;
-        },
-
-        number(): NumberValidator {
-          const validator: NumberValidator = {
-            min(message: string) {
-              validationRules.get(fieldName)!.push(() => {
-                const value = parseFloat((element as HTMLInputElement).value);
-                const minValue = parseFloat(message.match(/\d+/)?.[0] || '0');
-                if (isNaN(value) || value < minValue) {
-                  errorValidator.setErrorMessage(message);
-                  return false;
-                }
-                errorValidator.clearErrorMessage();
-                return true;
-              });
-              return validator;
-            },
-            max(message: string) {
-              validationRules.get(fieldName)!.push(() => {
-                const value = parseFloat((element as HTMLInputElement).value);
-                const maxValue = parseFloat(message.match(/\d+/)?.[0] || '999999');
-                if (isNaN(value) || value > maxValue) {
-                  errorValidator.setErrorMessage(message);
-                  return false;
-                }
-                errorValidator.clearErrorMessage();
-                return true;
-              });
-              return validator;
-            },
-            label(_message: string) {
-              return validator;
-            },
-          };
-          return validator;
-        },
-
-        array(): ArrayValidator {
-          const validator: ArrayValidator = {
-            min(message: string) {
-              validationRules.get(fieldName)!.push(() => {
-                const checkedCount = formValidator
-                  .getInputsByType('checkbox')
-                  .filter(input => input.name === fieldName && (input as HTMLInputElement).checked).length;
-                const minCount = parseInt(message.match(/\d+/)?.[0] || '0');
-                if (checkedCount < minCount) {
-                  errorValidator.setErrorMessage(message);
-                  return false;
-                }
-                errorValidator.clearErrorMessage();
-                return true;
-              });
-              return validator;
-            },
-            max(message: string) {
-              validationRules.get(fieldName)!.push(() => {
-                const checkedCount = formValidator
-                  .getInputsByType('checkbox')
-                  .filter(input => input.name === fieldName && (input as HTMLInputElement).checked).length;
-                const maxCount = parseInt(message.match(/\d+/)?.[0] || '999');
-                if (checkedCount > maxCount) {
-                  errorValidator.setErrorMessage(message);
-                  return false;
-                }
-                errorValidator.clearErrorMessage();
-                return true;
-              });
-              return validator;
-            },
-            label(_message: string) {
-              return validator;
-            },
-          };
-          return validator;
-        },
-      };
-    },
-
-    validate(): boolean {
-      if (!formValidator.hasInputs()) {
-        return false;
-      }
-
-      if (!formValidator.validateAllInputsHaveNames()) {
-        return false;
-      }
-
-      let isValid = true;
-
-      for (const [_fieldName, rules] of validationRules) {
-        for (const rule of rules) {
-          if (!rule()) {
-            isValid = false;
-          }
-        }
-      }
-
-      return isValid;
-    },
-  };
-}
-
-export function validateLabelBinding(input: HTMLInputElement): boolean {
+function validateLabelBinding(input: HTMLElement): boolean {
   const inputId = input.id;
 
   if (inputId) {
@@ -266,69 +20,333 @@ export function validateLabelBinding(input: HTMLInputElement): boolean {
   return false;
 }
 
-export class ErrorFieldValidator {
-  private input: HTMLInputElement;
-  private errorElement: HTMLElement | null = null;
-  private formValidator: FormInputValidator | null = null;
+function findErrorElement(input: HTMLElement): HTMLElement | null {
+  const nextElement = input.nextElementSibling;
+  if (
+    nextElement &&
+    (nextElement.classList.contains('error') ||
+      nextElement.classList.contains('error-message'))
+  ) {
+    return nextElement as HTMLElement;
+  }
+  return null;
+}
 
-  constructor(input: HTMLInputElement, form?: HTMLFormElement) {
-    this.input = input;
+function showError(errorElement: HTMLElement, message: string): void {
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  errorElement.style.color = 'red';
+}
 
-    if (form) {
-      this.formValidator = new FormInputValidator(form);
+function clearError(errorElement: HTMLElement): void {
+  errorElement.textContent = '';
+  errorElement.style.display = 'none';
+}
 
-      if (this.input.name && !this.formValidator.hasInputByName(this.input.name)) {
-        throw new Error(`Input with name "${this.input.name}" not found in form`);
+export function form(formElement: HTMLFormElement): FormValidator {
+  const inputs = Array.from(
+    formElement.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+      'input, textarea, select'
+    )
+  );
+
+  if (inputs.length === 0) {
+    throw new Error('Form has no inputs');
+  }
+
+  const inputsWithoutName = inputs.filter(input => !input.name || input.name.trim() === '');
+  if (inputsWithoutName.length > 0) {
+    throw new Error('Not all inputs have name attribute');
+  }
+
+  for (const input of inputs) {
+    if (input instanceof HTMLInputElement && input.type !== 'hidden' && !validateLabelBinding(input)) {
+      throw new Error(`Input "${input.name}" has no associated label`);
+    }
+  }
+
+  for (const input of inputs) {
+    if (input instanceof HTMLInputElement && input.type !== 'hidden' && !findErrorElement(input)) {
+      throw new Error(`Input "${input.name}" has no error message element`);
+    }
+  }
+
+  const validationRules = new Map<string, Array<() => boolean>>();
+
+  return {
+    field(fieldName: string): FieldValidator {
+      const element = inputs.find(input => input.name === fieldName);
+
+      if (!element) {
+        throw new Error(`Field "${fieldName}" not found`);
       }
-    }
-  }
 
-  hasErrorField(): boolean {
-    const nextElement = this.input.nextElementSibling;
-    if (
-      nextElement &&
-      (nextElement.classList.contains('error') ||
-        nextElement.classList.contains('error-message'))
-    ) {
-      this.errorElement = nextElement as HTMLElement;
-      return true;
-    }
-    return false;
-  }
-
-  getErrorElement(): HTMLElement | null {
-    return this.errorElement;
-  }
-
-  setErrorMessage(message: string): boolean {
-    if (this.formValidator && this.input.name) {
-      const inputExists = this.formValidator.hasInputByName(this.input.name);
-      if (!inputExists) {
-        return false;
+      const errorElement = findErrorElement(element);
+      if (!errorElement) {
+        throw new Error(`Field "${fieldName}" has no error element`);
       }
-    }
 
-    if (this.hasErrorField() && this.errorElement) {
-      this.errorElement.textContent = message;
-      this.errorElement.style.display = 'block';
-      return true;
-    }
-    return false;
-  }
-
-  clearErrorMessage(): boolean {
-    if (this.formValidator && this.input.name) {
-      const inputExists = this.formValidator.hasInputByName(this.input.name);
-      if (!inputExists) {
-        return false;
+      if (!validationRules.has(fieldName)) {
+        validationRules.set(fieldName, []);
       }
-    }
 
-    if (this.errorElement) {
-      this.errorElement.textContent = '';
-      this.errorElement.style.display = 'none';
-      return true;
-    }
-    return false;
-  }
+      return {
+        string(): StringValidator {
+          const validator: StringValidator = {
+            min(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const input = element as HTMLInputElement;
+                const value = input.value;
+
+                if (input.required && !value) {
+                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                const minLength = input.minLength;
+                if (minLength > 0 && value.length < minLength) {
+                  const message = customMessage || input.validationMessage || `Минимум ${minLength} символов`;
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+
+            max(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const input = element as HTMLInputElement;
+                const value = input.value;
+
+                const maxLength = input.maxLength;
+                if (maxLength > 0 && value.length > maxLength) {
+                  const message = customMessage || input.validationMessage || `Максимум ${maxLength} символов`;
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+
+            pattern(regex: RegExp, customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const input = element as HTMLInputElement;
+                const value = input.value;
+
+                if (value && !regex.test(value)) {
+                  const message = customMessage || input.validationMessage || 'Неверный формат';
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+
+            required(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const input = element as HTMLInputElement;
+                const value = input.value.trim();
+
+                if (!value) {
+                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+          };
+          return validator;
+        },
+
+        number(): NumberValidator {
+          const validator: NumberValidator = {
+            min(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const input = element as HTMLInputElement;
+                const value = parseFloat(input.value);
+
+                if (input.required && (input.value === '' || isNaN(value))) {
+                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                const minValue = input.min ? parseFloat(input.min) : null;
+                if (minValue !== null && !isNaN(value) && value < minValue) {
+                  const message = customMessage || input.validationMessage || `Минимум ${minValue}`;
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+
+            max(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const input = element as HTMLInputElement;
+                const value = parseFloat(input.value);
+
+                const maxValue = input.max ? parseFloat(input.max) : null;
+                if (maxValue !== null && !isNaN(value) && value > maxValue) {
+                  const message = customMessage || input.validationMessage || `Максимум ${maxValue}`;
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+
+            required(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const input = element as HTMLInputElement;
+                const value = input.value.trim();
+
+                if (!value) {
+                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                const numValue = parseFloat(value);
+                if (isNaN(numValue)) {
+                  const message = customMessage || 'Введите число';
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+          };
+          return validator;
+        },
+
+        array(): ArrayValidator {
+          const validator: ArrayValidator = {
+            min(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const checkboxes = inputs.filter(
+                  input => input.name === fieldName &&
+                  input instanceof HTMLInputElement &&
+                  input.type === 'checkbox'
+                ) as HTMLInputElement[];
+
+                const checkedCount = checkboxes.filter(cb => cb.checked).length;
+
+                const firstCheckbox = checkboxes[0];
+                let minRequired = 0;
+
+                if (firstCheckbox?.required) {
+                  minRequired = 1;
+                }
+
+                const dataMin = firstCheckbox?.getAttribute('data-min');
+                if (dataMin) {
+                  minRequired = parseInt(dataMin, 10);
+                }
+
+                if (checkedCount < minRequired) {
+                  const message = customMessage || `Выберите минимум ${minRequired}`;
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+
+            max(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const checkboxes = inputs.filter(
+                  input => input.name === fieldName &&
+                  input instanceof HTMLInputElement &&
+                  input.type === 'checkbox'
+                ) as HTMLInputElement[];
+
+                const checkedCount = checkboxes.filter(cb => cb.checked).length;
+
+                const firstCheckbox = checkboxes[0];
+                const dataMax = firstCheckbox?.getAttribute('data-max');
+                const maxAllowed = dataMax ? parseInt(dataMax, 10) : Infinity;
+
+                if (checkedCount > maxAllowed) {
+                  const message = customMessage || `Выберите максимум ${maxAllowed}`;
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+
+            required(customMessage?: string) {
+              validationRules.get(fieldName)!.push(() => {
+                const checkboxes = inputs.filter(
+                  input => input.name === fieldName &&
+                  input instanceof HTMLInputElement &&
+                  input.type === 'checkbox'
+                ) as HTMLInputElement[];
+
+                const checkedCount = checkboxes.filter(cb => cb.checked).length;
+
+                if (checkedCount === 0) {
+                  const message = customMessage || 'Выберите хотя бы один вариант';
+                  showError(errorElement, message);
+                  return false;
+                }
+
+                clearError(errorElement);
+                return true;
+              });
+              return validator;
+            },
+          };
+          return validator;
+        },
+      };
+    },
+
+    validate(): boolean {
+      let isValid = true;
+
+      for (const rules of validationRules.values()) {
+        for (const rule of rules) {
+          const ruleResult = rule();
+
+          if (!ruleResult) {
+            isValid = false;
+            break;
+          }
+        }
+      }
+
+      return isValid;
+    },
+  };
 }

@@ -1,23 +1,46 @@
-import { KatyshFormValidator } from './validators';
+export { form } from './validators';
 
-const form = document.getElementById('testForm') as HTMLFormElement;
-const validator = KatyshFormValidator(form);
+export type {
+  FormValidator,
+  FieldValidator,
+  StringValidator,
+  NumberValidator,
+  ArrayValidator,
+} from './types/types';
 
-validator.field('username').string()
-  .min('Минимум 3 символа')
-  .max('Максимум 20 символов')
-  .pattern(/^[a-zA-Z]+$/, 'Только латинские буквы');
+import { form } from './validators';
 
-validator.field('age').number()
-  .min('Минимум 18')
-  .max('Максимум 100');
+const formElement = document.getElementById('testForm') as HTMLFormElement;
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
+if (formElement) {
+  const validator = form(formElement);
 
-  if (validator.validate()) {
-    alert('Форма валидна!');
-  } else {
-    alert('Ошибка валидации!');
-  }
-});
+  validator.field('username')
+    .string()
+    .required('Имя обязательно')
+    .min('Слишком короткое имя')
+    .pattern(/^[a-zA-Zа-яА-Я]+$/, 'Только буквы');
+
+  validator.field('age')
+    .number()
+    .required('Возраст обязателен')
+    .min('Вы слишком молоды')
+    .max('Проверьте возраст');
+
+  formElement.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const isValid = validator.validate();
+
+    if (isValid) {
+      const successMessage = document.createElement('div');
+      successMessage.textContent = '✓ Форма успешно отправлена!';
+      successMessage.style.cssText = 'color: green; margin-top: 10px; padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;';
+      formElement.appendChild(successMessage);
+
+      setTimeout(() => {
+        successMessage.remove();
+      }, 3000);
+    }
+  });
+}

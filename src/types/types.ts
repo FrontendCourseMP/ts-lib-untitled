@@ -14,22 +14,22 @@ export type FieldValidator = {
 };
 
 export type StringValidator = {
-  min: (message: string) => StringValidator;
-  max: (message: string) => StringValidator;
-  pattern: (pattern: RegExp, message: string) => StringValidator;
-  label: (message: string) => StringValidator;
+  min: (message?: string) => StringValidator;
+  max: (message?: string) => StringValidator;
+  pattern: (pattern: RegExp, message?: string) => StringValidator;
+  required: (message?: string) => StringValidator;
 };
 
 export type NumberValidator = {
-  min: (message: string) => NumberValidator;
-  max: (message: string) => NumberValidator;
-  label: (message: string) => NumberValidator;
+  min: (message?: string) => NumberValidator;
+  max: (message?: string) => NumberValidator;
+  required: (message?: string) => NumberValidator;
 };
 
 export type ArrayValidator = {
-  min: (message: string) => ArrayValidator;
-  max: (message: string) => ArrayValidator;
-  label: (message: string) => ArrayValidator;
+  min: (message?: string) => ArrayValidator;
+  max: (message?: string) => ArrayValidator;
+  required: (message?: string) => ArrayValidator;
 };
 
 export type ValidityStateType = {

@@ -6,6 +6,45 @@
 Милосердов Николай Сергеевич - Nikolach454 (с 3.12.25)
 Иванилов Алексей Тимофеевич - GlennSaren (изгнан 3.12.25)
 
+# Библиотека валидации форм "Katysh"
+
+## Быстрый старт
+
+```typescript
+import { form } from './validators';
+
+const formElement = document.getElementById('myForm') as HTMLFormElement;
+const validator = form(formElement);
+
+validator.field('username')
+  .string()
+  .required('Имя обязательно')
+  .min('Минимум 3 символа');
+
+validator.field('age')
+  .number()
+  .min('Минимум 18 лет');
+
+formElement.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (validator.validate()) {
+    console.log('Форма валидна!');
+  }
+});
+```
+
+## Требования к HTML
+
+```html
+<form novalidate>
+  <label for="username">Имя</label>
+  <input type="text" id="username" name="username" required minlength="3">
+  <span class="error-message"></span>
+</form>
+```
+
+---
+
 ## Типы
 
 ### KatyshFormAPI
@@ -55,4 +94,24 @@
 - `stepMismatch` - не соответствует шагу
 - `badInput` - некорректный ввод
 - `customError` - пользовательская ошибка
+
+---
+
+## История изменений
+
+### Коммит: "минимально рабочая реализация работы, первая проверка" (10.12.2025)
+
+**Переименование `KatyshFormValidator` → `form()`** - упрощение API для пользователей библиотеки согласно требованию `import * as k from "lib"` → `k.form(formElement)`.
+
+**Полная переработка архитектуры** - удалены избыточные классы `FormInputValidator` и `ErrorFieldValidator`, создана единая функция `form()` с чистыми хелперами для упрощения кода.
+
+**Автоматические проверки при инициализации** - добавлена валидация наличия инпутов, атрибутов `name`, связи с `label` и элементов для вывода ошибок согласно требованию задачи.
+
+**Поддержка Constraint Validation API** - библиотека теперь "уважает" стандартные HTML-атрибуты (`required`, `minlength`, `min`, `max`, `pattern`) и использует `input.validationMessage` как fallback.
+
+**Кастомные сообщения об ошибках** - все методы валидации принимают опциональный параметр для переопределения сообщений согласно требованию задачи.
+
+**Метод `validate()`** - реализован метод для запуска всех правил валидации, возвращает `boolean`, используется для привязки к `submit` согласно требованию.
+
+**Обновление тестовых файлов** - добавлены HTML-атрибуты валидации, корректная разметка с `label` и элементами ошибок, демонстрация использования API в [main.ts](src/main.ts).
 
