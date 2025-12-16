@@ -65,7 +65,16 @@ export function form(formElement: HTMLFormElement): FormValidator {
     }
   }
 
+  const processedCheckboxGroups = new Set<string>();
+
   for (const input of inputs) {
+    if (input instanceof HTMLInputElement && input.type === 'checkbox') {
+      if (processedCheckboxGroups.has(input.name)) {
+        continue;
+      }
+      processedCheckboxGroups.add(input.name);
+    }
+
     if (input instanceof HTMLInputElement && input.type !== 'hidden' && !findErrorElement(input)) {
       throw new Error(`Input "${input.name}" has no error message element`);
     }
@@ -99,14 +108,19 @@ export function form(formElement: HTMLFormElement): FormValidator {
                 const value = input.value;
 
                 if (input.required && !value) {
-                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  const message = customMessage || 'Это поле обязательно';
                   showError(errorElement, message);
                   return false;
                 }
 
+                if (!value) {
+                  clearError(errorElement);
+                  return true;
+                }
+
                 const minLength = input.minLength;
                 if (minLength > 0 && value.length < minLength) {
-                  const message = customMessage || input.validationMessage || `Минимум ${minLength} символов`;
+                  const message = customMessage || `Минимум ${minLength} символов`;
                   showError(errorElement, message);
                   return false;
                 }
@@ -122,9 +136,14 @@ export function form(formElement: HTMLFormElement): FormValidator {
                 const input = element as HTMLInputElement;
                 const value = input.value;
 
+                if (!value) {
+                  clearError(errorElement);
+                  return true;
+                }
+
                 const maxLength = input.maxLength;
                 if (maxLength > 0 && value.length > maxLength) {
-                  const message = customMessage || input.validationMessage || `Максимум ${maxLength} символов`;
+                  const message = customMessage || `Максимум ${maxLength} символов`;
                   showError(errorElement, message);
                   return false;
                 }
@@ -141,7 +160,7 @@ export function form(formElement: HTMLFormElement): FormValidator {
                 const value = input.value;
 
                 if (value && !regex.test(value)) {
-                  const message = customMessage || input.validationMessage || 'Неверный формат';
+                  const message = customMessage || 'Неверный формат';
                   showError(errorElement, message);
                   return false;
                 }
@@ -158,7 +177,7 @@ export function form(formElement: HTMLFormElement): FormValidator {
                 const value = input.value.trim();
 
                 if (!value) {
-                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  const message = customMessage || 'Это поле обязательно';
                   showError(errorElement, message);
                   return false;
                 }
@@ -180,14 +199,19 @@ export function form(formElement: HTMLFormElement): FormValidator {
                 const value = parseFloat(input.value);
 
                 if (input.required && (input.value === '' || isNaN(value))) {
-                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  const message = customMessage || 'Это поле обязательно';
                   showError(errorElement, message);
                   return false;
                 }
 
+                if (input.value === '' || isNaN(value)) {
+                  clearError(errorElement);
+                  return true;
+                }
+
                 const minValue = input.min ? parseFloat(input.min) : null;
-                if (minValue !== null && !isNaN(value) && value < minValue) {
-                  const message = customMessage || input.validationMessage || `Минимум ${minValue}`;
+                if (minValue !== null && value < minValue) {
+                  const message = customMessage || `Минимум ${minValue}`;
                   showError(errorElement, message);
                   return false;
                 }
@@ -203,9 +227,14 @@ export function form(formElement: HTMLFormElement): FormValidator {
                 const input = element as HTMLInputElement;
                 const value = parseFloat(input.value);
 
+                if (input.value === '' || isNaN(value)) {
+                  clearError(errorElement);
+                  return true;
+                }
+
                 const maxValue = input.max ? parseFloat(input.max) : null;
-                if (maxValue !== null && !isNaN(value) && value > maxValue) {
-                  const message = customMessage || input.validationMessage || `Максимум ${maxValue}`;
+                if (maxValue !== null && value > maxValue) {
+                  const message = customMessage || `Максимум ${maxValue}`;
                   showError(errorElement, message);
                   return false;
                 }
@@ -222,7 +251,7 @@ export function form(formElement: HTMLFormElement): FormValidator {
                 const value = input.value.trim();
 
                 if (!value) {
-                  const message = customMessage || input.validationMessage || 'Это поле обязательно';
+                  const message = customMessage || 'Это поле обязательно';
                   showError(errorElement, message);
                   return false;
                 }
